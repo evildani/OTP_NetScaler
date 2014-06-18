@@ -1,0 +1,125 @@
+<HTML><HEAD><TITLE>Citrix Access Gateway</TITLE> 
+<link rel="SHORTCUT ICON" href="/vpn/images/AccessGateway.ico" type="image/vnd.microsoft.icon">
+<META http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<META content=noindex,nofollow,noarchive name=robots>
+<LINK href="/vpn/images/caxtonstyle.css" type=text/css rel=STYLESHEET>
+<script type="text/javascript" src="/vpn/resources.js"></script>
+<script type="text/javascript" language="javascript">
+var Resources = new ResourceManager("resources/{lang}", "logon");
+</script>
+<style type="text/css">
+body
+{
+  display : none;
+  visibility: hidden;
+}
+</style>
+<SCRIPT language=JavaScript>
+// frame-busting script
+function changePage()
+{
+	if( self == top ) {
+  		 document.getElementsByTagName("body")[0].style.display = 'block' ;
+		 ns_fillName();
+	} else {
+   		top.location = self.location ;
+	}
+
+}
+function setFocus(obj)
+{
+   if (obj != null) {
+      obj.focus();
+   }
+}			
+//-->
+</SCRIPT>
+
+<META content="MSHTML 6.00.2900.2802" name=GENERATOR></HEAD>
+<BODY>
+<!-- Copyright 2001-2005 Citrix Systems, Inc. All Rights Reserved -->
+
+
+
+<!-- Header -->
+<script language="javascript" type="text/javascript">
+	CreateMainTable();
+    AddHeaderAndBar();
+</script>
+
+<!-- Logon box -->
+<tr class="mainPane" >
+    <td class="carbonBoxBottom" valign="bottom">
+        	<script language="javascript" type="text/javascript">
+            documentWriteGlowBoxUpper();
+            </script>
+                <FORM method="post" action="/cgi/login" name="vpnForm" autocomplete="off" style="margin:0"> 
+                    <table cellspacing="4" cellpadding="0" border="0" width=100%>
+                        <tr>
+                            <td class="CTX_ContentTitleHeader">
+	                            <div id="ctl08_loginAgentCdaHeaderText" style="padding-left:15px"><span id="Welcome"></span></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="CTXMSAM_LogonFont">
+                                <div id="ctl08_loginAgentCdaHeaderText2" style="padding-left:15px"></div>
+                            </td>
+                        </tr>
+                        <tr border=10>
+	                        <td class="CTXMSAM_LogonFont" valign="top">
+	                        	<script language="javascript" type="text/javascript">    
+                				documentWriteActionPane();
+								</script>
+                                    <table width=70% id="ctl08_inputTable" class="CTXMSAM_LogonFont" cellspacing="0" cellpadding="4" border="0" style="border-width:0px;border-collapse:collapse;">										
+										<tr><td colspan=3></td></tr>
+										<tr>
+										<td align="right" style="padding-right:10px;white-space:nowrap;"><span id="User_name" class="CTXMSAM_LogonFont"></span></td>
+										<td colspan=2 style="padding-right:8px;"><input id="Enter user name" class="CTXMSAM_ContentFont" style="font-size: 8pt" type="text" title="" name="login" size="30" maxlength="127" onFocus="loginFieldCheck()"style="width:100%;" /></td>
+										</tr>
+										<SCRIPT language=JavaScript>ns_showpwd();</SCRIPT>
+										<tr>
+										<td></td><td></td><td align="right"><span style="display:none"><img src="/vpn/images/LoginButtonRolloverGlow.gif"/></span><input type="submit" id="Log_On" value="" class="CTX_CaxtonButton" onclick="ns_check();"  onmouseover="this.className='CTX_CaxtonButton_Hover';" onmouseout="this.className='CTX_CaxtonButton';" /></td>
+										</tr>
+									</table>
+                                </div>
+	                        </td>
+                        </tr>
+                    </table>
+                    </FORM>
+                <script language="javascript" type="text/javascript">    
+                documentWriteGlowBoxLower();
+				</script>
+    </td>
+</tr>
+
+<!-- Error message box -->		    
+<tr>
+                <td align="center">
+                    <table class="CTXMSAM_LogonFont">
+                        <tr id="errorMessageRow">
+                            <td class="glowBoxLeft">&nbsp;</td>
+                            
+                            <td class="loginTableMidWidth">
+                            
+                                <script language='javascript'>ns_disperrmsg();</script>
+                            
+                            </td>
+                            
+                            <td class="glowBoxRight">&nbsp;</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+          
+<!-- Footer -->
+<script language="javascript" type="text/javascript">
+AddFooter();
+</script>
+</table>
+
+<DIV id=scriptArea></DIV>
+<script type="text/javascript" language="javascript">
+Resources.Load();
+</script>
+</BODY>
+</HTML>

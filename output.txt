@@ -1,0 +1,163 @@
+#NS10.1 Build 126.12
+# Last modified by `save config`, Thu Jun 12 19:40:05 2014
+set ns config -IPAddress 192.168.254.110 -netmask 255.255.255.0
+enable ns feature WL LB CS CMP SSL SSLVPN AAA REWRITE RESPONDER
+enable ns mode FR L3 MBF Edge USNIP PMTUD
+set system parameter -natPcbForceFlushLimit 4294967295
+set system user nsroot 10b4c3dd41d77b37957b3232e8a82b854630f8b9c2fc98fd0 -encrypted -timeout 0
+set rsskeytype -rsstype ASYMMETRIC
+set lacp -sysPriority 32768 -mac 00:0c:29:60:8f:8c
+set ns hostName ns
+set interface 0/1 -throughput 0 -bandwidthHigh 0 -bandwidthNormal 0 -intftype "XEN Interface" -ifnum 0/1
+set interface 1/1 -throughput 0 -bandwidthHigh 0 -bandwidthNormal 0 -intftype "XEN Interface" -ifnum 1/1
+set interface LO/1 -haMonitor OFF -throughput 0 -bandwidthHigh 0 -bandwidthNormal 0 -intftype Loopback -ifnum LO/1
+add ns ip6 fe80::20c:29ff:fec9:d928/64 -scope link-local -type NSIP -vlan 1 -vServer DISABLED -mgmtAccess ENABLED -dynamicRouting ENABLED
+add ns ip 192.168.254.129 255.255.255.0 -vServer DISABLED
+set ipsec parameter -lifetime 28800
+set nd6RAvariables -vlan 1
+bind nd6RAvariables -vlan 1 -ipv6Prefix ::
+set ipv6 -natprefix ::
+set snmp alarm SYNFLOOD -timeout 1
+set snmp alarm HA-VERSION-MISMATCH -time 86400 -timeout 86400
+set snmp alarm HA-SYNC-FAILURE -time 86400 -timeout 86400
+set snmp alarm HA-NO-HEARTBEATS -time 86400 -timeout 86400
+set snmp alarm HA-BAD-SECONDARY-STATE -time 86400 -timeout 86400
+set snmp alarm HA-PROP-FAILURE -timeout 86400
+set snmp alarm IP-CONFLICT -timeout 86400
+set snmp alarm APPFW-START-URL -timeout 1
+set snmp alarm APPFW-DENY-URL -timeout 1
+set snmp alarm APPFW-REFERER-HEADER -timeout 1
+set snmp alarm APPFW-CSRF-TAG -timeout 1
+set snmp alarm APPFW-COOKIE -timeout 1
+set snmp alarm APPFW-FIELD-CONSISTENCY -timeout 1
+set snmp alarm APPFW-BUFFER-OVERFLOW -timeout 1
+set snmp alarm APPFW-FIELD-FORMAT -timeout 1
+set snmp alarm APPFW-SAFE-COMMERCE -timeout 1
+set snmp alarm APPFW-SAFE-OBJECT -timeout 1
+set snmp alarm APPFW-POLICY-HIT -timeout 1
+set snmp alarm APPFW-VIOLATIONS-TYPE -timeout 1
+set snmp alarm APPFW-XSS -timeout 1
+set snmp alarm APPFW-XML-XSS -timeout 1
+set snmp alarm APPFW-SQL -timeout 1
+set snmp alarm APPFW-XML-SQL -timeout 1
+set snmp alarm APPFW-XML-ATTACHMENT -timeout 1
+set snmp alarm APPFW-XML-DOS -timeout 1
+set snmp alarm APPFW-XML-VALIDATION -timeout 1
+set snmp alarm APPFW-XML-WSI -timeout 1
+set snmp alarm APPFW-XML-SCHEMA-COMPILE -timeout 1
+set snmp alarm APPFW-XML-SOAP-FAULT -timeout 1
+set snmp alarm DNSKEY-EXPIRY -timeout 1
+set snmp alarm HA-LICENSE-MISMATCH -timeout 86400
+set snmp alarm CLUSTER-NODE-HEALTH -time 86400 -timeout 86400
+set snmp alarm CLUSTER-NODE-QUORUM -time 86400 -timeout 86400
+set snmp alarm CLUSTER-VERSION-MISMATCH -time 86400 -timeout 86400
+add policy expression step2_page "\"<html><head></head><body><form name=step2 action=https://192.168.254.128/cgi/login><input type=hidden name=login value=\"+http.REQ.USER.NAME+\" /><input type=hidden name=password value=\"+http.REQ.USER.PASSWD+\"/><input type=password name=password2 /></form></form></html>\""
+add policy expression resp_pol_ynhh_ageesso_javascriptbody "\"<head><META HTTP-EQUIV=\\\"Content-Type\\\" CONTENT=\\\"text/html; charset=UTF-8\\\">\"+\"\n<style type=\\\"text/css\\\">body{  visibility: hidden;}</style>\n</head>\"+\"\n<body onLoad=\\\'document.forms[0].submit();\\\'>\n<form action=\\\"https://\"+http.REQ.URL.QUERY.VALUE(\"agurl\")+\"/cgi/login\\\" method=\\\"post\\\">\n<input type=hidden name=login value=\\\"\\\">\n<input type=hidden name=passwd value=\\\"\\\">\n<span id=\\\"If you are not automatically redirected click \\\">\n</span>\"+\"\n<input id=\\\"Continue\\\" type=\\\"submit\\\" value=\\\"Continue\\\">\n<span id=\\\"Trailing phrase after Continue button\\\">\n</span></form>\"+\"\n<script type=\\\"text/javascript\\\" language=\\\"javascript\\\">var loginname = \\\"\"+http.REQ.USER.NAME +\"\\\";var passwdval = \\\"\"+http.REQ.USER.PASSWD+\"\\\";document.forms[0].login.value = loginname; document.forms[0].passwd.value = passwdval; \"+\"</script></body>\""
+add policy expression javascriptbody "\"<head><META HTTP-EQUIV=\\\"Content-Type\\\" CONTENT=\\\"text/html; charset=UTF-8\\\">\"+\"\n<style type=\\\"text/css\\\">body{  visibility: hidden;}</style>\n</head>\"+\"\n<body onLoad=\\\'document.forms[0].submit();\\\'>\n<form action=\\\"https://\"+http.REQ.URL.QUERY.VALUE(\"agurl\")+\"/cgi/login\\\" method=\\\"post\\\">\n<input type=hidden name=login value=\\\"\\\">\n<input type=hidden name=passwd value=\\\"\\\">\n<span id=\\\"If you are not automatically redirected click \\\">\n</span>\"+\"\n<input id=\\\"Continue\\\" type=\\\"submit\\\" value=\\\"Continue\\\">\n<span id=\\\"Trailing phrase after Continue button\\\">\n</span></form>\"+\"\n<script type=\\\"text/javascript\\\" language=\\\"javascript\\\">var loginname = \\\"\"+http.REQ.USER.NAME +\"\\\";var passwdval = \\\"\"+http.REQ.USER.PASSWD+\"\\\";document.forms[0].login.value = loginname; document.forms[0].passwd.value = passwdval; \"+\"</script></body>\""
+add policy expression STEP2 "\"<html><head>\n<META HTTP-EQUIV=\\\"Content-Type\\\" CONTENT=\\\"text/html; charset=UTF-8\\\">\n<style type=\\\"text/css\\\"></style>\n<h3>\"+\"</h3></head>\"+\"\n<body>\n<form action=\\\"https://https://192.168.254.128/cgi/login\\\" method=\\\"post\\\">\n\"+\"<input type=hidden name=login value=\"+http.REQ.USER.NAME+\">\n<input type=hidden name=passwd value=\"+http.REQ.USER.PASSWD+\"><br>\nToken: <input type=password name=password2>\n<input type=\\\"submit\\\" value=\\\"Continue\\\">\n</form>\n</body></html>\""
+add policy expression STEP2_FINAL "\"<html><head><META HTTP-EQUIV=\\\"Content-Type\\\" CONTENT=\\\"text/html; charset=UTF-8\\\">\"+\"\n<style type=\\\"text/css\\\"></style>\n</head>\"+\"\n<body>\n<form action=\\\"https://\"+http.REQ.URL.QUERY.VALUE(\"url\")+\"/cgi/login\\\" method=\\\"post\\\">\n<input type=hidden name=login value=\\\"\"+http.REQ.USER.NAME +\"\\\">\n<input type=hidden name=passwd value=\\\"\"+http.REQ.USER.PASSWD+\"\\\">\n\"+\"\n<input id=\\\"Continue\\\" type=\\\"submit\\\" value=\\\"Continue\\\">\n</form>\"+\"\n</body></html>\""
+set ns tcpProfile nstcp_default_tcp_lfp -mss 0
+set ns tcpProfile nstcp_default_tcp_lnp -mss 0
+set ns tcpProfile nstcp_default_tcp_lan -mss 0
+set ns tcpProfile nstcp_default_tcp_lfp_thin_stream -mss 0
+set ns tcpProfile nstcp_default_tcp_lnp_thin_stream -mss 0
+set ns tcpProfile nstcp_default_tcp_lan_thin_stream -mss 0
+set ns tcpProfile nstcp_default_tcp_interactive_stream -mss 0
+set ns tcpProfile nstcp_internal_apps -mss 0
+set ns tcpProfile nstcp_default_XA_XD_profile -mss 0
+set ns tcpProfile nstcp_default_Mobile_profile -mss 0
+add server 192.168.254.132 192.168.254.132
+add service TEST_SVC 192.168.254.132 HTTP 8080 -gslb NONE -maxClient 0 -maxReq 0 -cip DISABLED -usip NO -useproxyport YES -sp OFF -cltTimeout 180 -svrTimeout 360 -CustomServerID "\"None\"" -CKA NO -TCPB NO -CMP YES
+add service TEST_SVC2 192.168.254.132 HTTP 80 -gslb NONE -maxClient 0 -maxReq 0 -cip DISABLED -usip NO -useproxyport YES -sp OFF -cltTimeout 180 -svrTimeout 360 -CustomServerID "\"None\"" -CKA NO -TCPB NO -CMP YES
+add aaa user daniel -password da2e1e4972cb -encrypted
+add ssl certKey ns-server-certificate -cert ns-server.cert -key ns-server.key
+add ssl certKey test -cert "/nsconfig/ssl/test.cert" -key "/nsconfig/ssl/test.key"
+add ssl certKey auth_test -cert "/nsconfig/ssl/auth_test.cert" -key "/nsconfig/ssl/auth_test.key" -expiryMonitor DISABLED
+add authentication radiusAction TEST -serverIP 192.168.254.110 -radKey d336034574d52737 -encrypted
+bind cmp global ns_adv_nocmp_xml_ie -priority 8700 -gotoPriorityExpression END -type RES_DEFAULT
+bind cmp global ns_adv_nocmp_mozilla_47 -priority 8800 -gotoPriorityExpression END -type RES_DEFAULT
+bind cmp global ns_adv_cmp_mscss -priority 8900 -gotoPriorityExpression END -type RES_DEFAULT
+bind cmp global ns_adv_cmp_msapp -priority 9000 -gotoPriorityExpression END -type RES_DEFAULT
+bind cmp global ns_adv_cmp_content_type -priority 10000 -gotoPriorityExpression END -type RES_DEFAULT
+add authentication radiusPolicy test_pol ns_true TEST
+add authentication radiusPolicy test_pol2 ns_true TEST
+set lb parameter -sessionsThreshold 150000
+add lb vserver test.com HTTP 192.168.254.131 80 -persistenceType NONE -cltTimeout 180 -AuthenticationHost auth.test.com -Authentication ON
+add authentication vserver 192.168.254.130_443_auth_vs SSL 192.168.254.130 443 -AuthenticationDomain test.com -appflowLog DISABLED
+set cache parameter -via "NS-CACHE-10.0: 110" -maxPostLen 0
+set aaa parameter -maxAAAUsers 5
+add vpn vserver TEST SSL 192.168.254.128 443 -doubleHop ENABLED -downStateFlush DISABLED
+set ns rpcNode 192.168.254.110 -password 8a7b474124957776a0cd31b862cbe4d72b5cbd59868a136d4bdeb56cf03b28 -encrypted -srcIP *
+add rewrite action test_rpl_cookie replace "http.RES.SET_COOKIE.AFTER_STR(\"pwcount=\").BEFORE_STR(\";\")" 1
+add rewrite policy test_rpl_cookie "HTTP.RES.SET_COOKIE.CONTAINS(\"pwcount\")" test_rpl_cookie
+add rewrite policy test_rpl_cookie2 "HTTP.Req.URL.PATH.ENDSWITH(\"index.html\")" test_rpl_cookie
+bind rewrite global test_rpl_cookie2 99 NEXT -type RES_OVERRIDE
+bind rewrite global test_rpl_cookie 100 NEXT -type RES_OVERRIDE
+add responder action STEP2 respondwith "\"HTTP 200 OK\"+\"<head>\n<META HTTP-EQUIV=\\\"Content-Type\\\" CONTENT=\\\"text/html; charset=UTF-8\\\">\n<style type=\\\"text/css\\\">body{  visibility: hidden;}</style>\n</head>\"+\"\n<body>\n<form action=\\\"https://https://192.168.254.128/cgi/login\\\" method=\\\"post\\\">\n\"+\"<input type=hidden name=login value=\"+http.REQ.USER.NAME+\">\n<input type=hidden name=passwd value=\"+http.REQ.USER.PASSWD+\">\n<input type=\\\"submit\\\" value=\\\"Continue\\\">\n</form>\n</body>\"" -bypassSafetyCheck YES
+add responder action step2_page_resp respondwith "\"HTTP/1.1 200 OK\nCache-Control: private, max-age=0\"+\"\nContent-Type: text/html; charset=utf-8\nContent-Length: \"+STEP2_FINAL.LENGTH+\"\\r\\n\\r\\n\"+STEP2_FINAL" -bypassSafetyCheck YES
+add responder action START_GOTO_STEP1 redirect "\"http://test.com/start?url=\"+http.REQ.HOSTNAME" -bypassSafetyCheck YES
+add responder policy STEP2 "http.REQ.URL.STARTSWITH(\"/start\")" step2_page_resp
+add responder policy GOTO_STEP_1 "http.REQ.HOSTNAME.EQ(\"agee.test.com\")&&(http.REQ.URL.EQ(\"/\")||http.REQ.URL.ENDSWITH(\"index.html\"))" START_GOTO_STEP1
+bind responder global GOTO_STEP_1 100 END -type REQ_OVERRIDE
+set responder param -undefAction NOOP
+bind lb vserver test.com TEST_SVC
+bind lb vserver test.com -policyName STEP2 -priority 100 -gotoPriorityExpression END -type REQUEST
+add dns nameServer 192.168.254.1
+set ns diameter -identity netscaler.com -realm com
+set dns parameter -nameLookupPriority DNS -dnssec DISABLED -maxPipeline 0 -dns64Timeout 1000
+add dns nsRec . a.root-servers.net -TTL 3600000
+add dns nsRec . b.root-servers.net -TTL 3600000
+add dns nsRec . c.root-servers.net -TTL 3600000
+add dns nsRec . d.root-servers.net -TTL 3600000
+add dns nsRec . e.root-servers.net -TTL 3600000
+add dns nsRec . f.root-servers.net -TTL 3600000
+add dns nsRec . g.root-servers.net -TTL 3600000
+add dns nsRec . h.root-servers.net -TTL 3600000
+add dns nsRec . i.root-servers.net -TTL 3600000
+add dns nsRec . j.root-servers.net -TTL 3600000
+add dns nsRec . k.root-servers.net -TTL 3600000
+add dns nsRec . l.root-servers.net -TTL 3600000
+add dns nsRec . m.root-servers.net -TTL 3600000
+add dns addRec l.root-servers.net 199.7.83.42 -TTL 3600000
+add dns addRec b.root-servers.net 192.228.79.201 -TTL 3600000
+add dns addRec d.root-servers.net 128.8.10.90 -TTL 3600000
+add dns addRec j.root-servers.net 192.58.128.30 -TTL 3600000
+add dns addRec h.root-servers.net 128.63.2.53 -TTL 3600000
+add dns addRec f.root-servers.net 192.5.5.241 -TTL 3600000
+add dns addRec k.root-servers.net 193.0.14.129 -TTL 3600000
+add dns addRec a.root-servers.net 198.41.0.4 -TTL 3600000
+add dns addRec c.root-servers.net 192.33.4.12 -TTL 3600000
+add dns addRec m.root-servers.net 202.12.27.33 -TTL 3600000
+add dns addRec i.root-servers.net 192.36.148.17 -TTL 3600000
+add dns addRec g.root-servers.net 192.112.36.4 -TTL 3600000
+add dns addRec e.root-servers.net 192.203.230.10 -TTL 3600000
+set lb monitor ldns-dns LDNS-DNS -query . -queryType Address
+add route 0.0.0.0 0.0.0.0 192.168.254.1
+set ssl service nshttps-::1l-443 -eRSA ENABLED -sessReuse DISABLED -tls11 DISABLED -tls12 DISABLED
+set ssl service nsrpcs-::1l-3008 -eRSA ENABLED -sessReuse DISABLED -tls11 DISABLED -tls12 DISABLED
+set ssl service nskrpcs-127.0.0.1-3009 -eRSA ENABLED -sessReuse DISABLED -tls11 DISABLED -tls12 DISABLED
+set ssl service nshttps-127.0.0.1-443 -eRSA ENABLED -sessReuse DISABLED -tls11 DISABLED -tls12 DISABLED
+set ssl service nsrpcs-127.0.0.1-3008 -eRSA ENABLED -sessReuse DISABLED -tls11 DISABLED -tls12 DISABLED
+set ssl vserver 192.168.254.130_443_auth_vs -tls11 DISABLED -tls12 DISABLED
+set ssl vserver TEST -tls11 DISABLED -tls12 DISABLED
+set vpn parameter -defaultAuthorizationAction ALLOW -forceCleanup none -clientOptions all -clientConfiguration all
+bind tunnel global ns_tunnel_cmpall_gzip
+bind vpn vserver TEST -policy test_pol -priority 100
+bind vpn vserver TEST -policy test_pol2 -priority 100 -secondary
+bind vpn vserver TEST -policy test_rpl_cookie -priority 100 -gotoPriorityExpression END -type RESPONSE
+bind vpn vserver TEST -policy GOTO_STEP_1 -priority 100 -gotoPriorityExpression END -type REQUEST
+bind authentication vserver 192.168.254.130_443_auth_vs -policy test_pol -priority 100
+bind authentication vserver 192.168.254.130_443_auth_vs -policy test_pol2 -priority 100 -secondary
+bind ssl service nshttps-::1l-443 -certkeyName ns-server-certificate
+bind ssl service nsrpcs-::1l-3008 -certkeyName ns-server-certificate
+bind ssl service nskrpcs-127.0.0.1-3009 -certkeyName ns-server-certificate
+bind ssl service nshttps-127.0.0.1-443 -certkeyName ns-server-certificate
+bind ssl service nsrpcs-127.0.0.1-3008 -certkeyName ns-server-certificate
+bind ssl vserver 192.168.254.130_443_auth_vs -certkeyName auth_test
+bind ssl vserver TEST -certkeyName test
+set L3Param -icmpErrGenerate DISABLED
+set uiinternal AUTHENTICATIONVSERVER 192.168.254.130_443_auth_vs -uiinfo auth.test.com
+set ns encryptionParams -method AES256 -keyValue ff0e316156e61419dfc233cf1ea191a72d6db117c7ce777b62d6c05eae6f581bbdabac1529de35428f1dac2f8d3508b459c112b8 -encrypted
+set inatparam -nat46v6Prefix ::/96
+set ip6TunnelParam -srcIP ::
+set ptp -state ENABLE

@@ -1,0 +1,12 @@
+my $string;
+for (0..9){
+	for (0..5) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+}
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";
+for (0..7) { $string .= chr( int(rand(25) + 65) ); } print $string."\n"; $string="";

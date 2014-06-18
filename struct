@@ -1,0 +1,19 @@
+my $user1 = {username,token,time};
+my $user2 = {username,token,time};
+my $user3 = {username,token,time};
+my $user4 = {username,token,time};
+my $username1 = "daniel";
+my $username2 = "castro";
+my $username3 = "velasco";
+my $username4 = "ruis";
+my %hash = ($username1, $user1, $username2, $user2, $username3, $user3, $username3, $user3, $username4, $user4 );
+
+if exists  $hash{ $key }; 
+
+# add a new key value pair
+$fruit_pairs{oranges} = 'lemons';
+
+	# use the delete function with the pair's key
+delete $fruit_pairs{apples};
+
+
