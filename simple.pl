@@ -17,9 +17,19 @@
     #$usuarios{$username} = [@user];
     $usuarios{$username}[0] = "ABCDEF";
     $usuarios{$username}[1] = time()+300;
+    $usuarios{$username}[2] = 0;
     my $string = "";
     my $time = 0;
     my $secret = "mysecret";  # Shared secret on the term server
+    
+    #lo necesario para LDAP
+    my $ldap = Net::LDAP->new( '192.168.254.133' ) or die "$@";
+    my $mesg = $ldap->bind( 'cn=admin',
+                      password => 'ttikyy09'
+                    );
+
+   my $base = "dc=test, dc=com";
+   my $attrs = [ 'cn','mail','TelephoneNumber' ];
 
     # Parse the RADIUS dictionary file (must have dictionary in current dir)
     my $dict = new RADIUS::Dictionary "dictionary"
@@ -30,18 +40,6 @@
     $s->bind or die "Couldn't bind: $!";
     $s->fcntl(F_SETFL, $s->fcntl(F_GETFL,0) | O_NONBLOCK)
       or die "Couldn't make socket non-blocking: $!";
-
-    #set up the LDAP conection for searching
- #  my $ldap = Net::LDAP->new( '192.168.40.7' ) or die "$@";
-  #  my $mesg = $ldap->bind ;    # an anonymous bind
-  #  $mesg = $ldap->search( # perform a search
-  #                      base   => "dn=airseatrans,dn=com",
-  #                      filter => "(&(sn=Daniel))"
-  #                    );
-  #  print $mesg->code;
-  #  $mesg->code && die $mesg->error;
-  #  my $entry;
- #foreach $entry ($mesg->entries) { print $entry->get_value("telephoneNumber"); }
 
     # Loop forever, recieving packets and replying to them
     while (1) {
@@ -57,7 +55,7 @@
           # Print some details about the incoming request (try ->dump here)
           print $p->attr('User-Name'), " logging in with password ",
                 $p->password($secret), "\n";
-          $username = $p->attr('User-Name');      
+          #$username = $p->attr('User-Name');      
           # Create a response packet
           my $rp = new RADIUS::Packet $dict;
           #print "Current User ".$username." ".$usuarios{$username}[0]." ".$usuarios{$username}[1]."\n";
@@ -76,8 +74,17 @@
               }else
               {
                 #token y password no corresponden
-                print "REJECT PASSWD MAL ".$p->attr('User-Name')."\n";
-                $rp->set_code('Access-Challenge');
+                print "REJECT PASSWD MAL ".$p->attr('User-Name')." Numero de intentos fallidos: ".$usuarios{$username}[2]."\n";
+                #aumenta el contador de errores.
+                if($usuarios{$username}[2]>3)
+                {
+                  $rp->set_code('Access-Reject');
+                  delete $usuarios{$p->attr('User-Name')};
+                }else{
+                  $usuarios{$username}[2]++;
+                  $rp->set_code('Access-Challenge');
+                }
+                
               }
             }else
               {
@@ -89,19 +96,44 @@
             }
           else{
             #Si el usuario no esta registrado
-            #TODO buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono
-            
-            #crear token
-            for (0..5) { $string .= chr( int(rand(25) + 65) ); } print $string."\n";
-             $usuarios{$username}[0] = $string;
-             #crear tiempo de expiracion
-             $time = time()+300;
-             $usuarios{$username}[1] = $time;
-             #print "New User with token ".$string." expires at ".$time."\n";
-             $string = "";
-             $time = 0;
-             #print "Current User ".$username." ".$usuarios{$username}[0]." ".$usuarios{$username}[1]."\n";
-             $rp->set_code('Access-Challenge');
+            #buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono
+            my $filter = "uid=".$p->attr('User-Name');
+               $mesg = $ldap->search ( base    => "$base",
+                                scope   => "sub",
+                                filter  => $filter,
+                                attrs   =>  $attrs
+                              );
+                      
+                print "MSG: ".$mesg->code."\n";
+    
+                my $entry;
+                foreach $entry ($mesg->entries) { 
+                  print "DN=".$entry->dn()."\n";
+                  if(!$entry->exists("TelephoneNumber"))
+                  {
+                    print "No hay Telefono registrado en LDAP\n";
+                    $rp->set_code('Access-Reject');
+                  }else{
+                    print "Phone: ".$entry->get_value("telephoneNumber")."\n";
+                    my $phone = $entry->get_value("telephoneNumber");
+                    my $phone = substr($phone, -3);
+                    if($p->password($secret) eq $phone)
+                    { 
+                      #crear token
+                      for (0..5) { $string .= chr( int(rand(25) + 65) ); } print $string."\n";
+                       $usuarios{$username}[0] = $string;
+                       #crear tiempo de expiracion
+                       $time = time()+300;
+                       $usuarios{$username}[1] = $time;
+                       $usuarios{$username}[2] = 0;
+                       #print "New User with token ".$string." expires at ".$time."\n";
+                       $string = "";
+                       $time = 0;
+                       #print "Current User ".$username." ".$usuarios{$username}[0]." ".$usuarios{$username}[1]."\n";
+                       $rp->set_code('Access-Challenge');
+                   }
+                  }
+              }
            }
           $rp->set_identifier($p->identifier);
           $rp->set_authenticator($p->authenticator);
