@@ -30,3 +30,4 @@
    
    }
    
+   $ldap->unbind;
