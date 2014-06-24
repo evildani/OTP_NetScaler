@@ -103,7 +103,7 @@ while (1)
     									}else
     									{
     										#token expirado
-    										print "Access-Reject:: REJECT TOKEN EXPIRADO ".$p->attr('User-Name')."; Tiempo ahora:".time()."; Esperaba: ".$usuarios{$p->attr('User-Name')}[1]."\n";
+    										print STDERR "Access-Reject:: REJECT TOKEN EXPIRADO ".$p->attr('User-Name')."; Tiempo ahora:".time()."; Esperaba: ".$usuarios{$p->attr('User-Name')}[1]."\n";
     										$rp->set_code('Access-Reject');
     										$usuarios{$p->attr('User-Name')}[2] = "0";
     										$usuarios{$p->attr('User-Name')}[1] = "0";
@@ -127,7 +127,7 @@ while (1)
     										print "DN=".$entry->dn()."\n";
     										if(!$entry->exists("TelephoneNumber"))
     										{
-    											print "Access-Reject:: No hay Telefono registrado en LDAP\n";
+    											print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
     											$rp->set_code('Access-Reject');
     										}else
     										{
@@ -155,7 +155,7 @@ while (1)
     												$rp->set_code('Access-Challenge');
     											}else
     											{
-    												print "Access-Reject:: Current User ".$p->attr('User-Name')." Password has wrong format\n";
+    												print STDERR "Access-Reject:: Current User ".$p->attr('User-Name')." Password has wrong format\n";
     												$rp->set_code('Access-Reject');
     											}
     										} #cierra si no existe el telefono
@@ -169,17 +169,17 @@ while (1)
                                                               $usuarios{$p->attr('User-Name')}[2] = "0";
                                                               $usuarios{$p->attr('User-Name')}[1] = "0";
                                                               delete $usuarios{$p->attr('User-Name')};
-                                                              print "Access-Reject por intentos errados en password de formato errado.\n";
+                                                              print STDERR "Access-Reject por intentos errados en password de formato errado.\n";
                                                               $rp->set_code('Access-Reject'); 
     							}
     							else{
                                                               $usuarios{$p->attr('User-Name')}[2]++;
-                                                              print "Access-Challenge por intento errado con password de formato errado.\n";
+                                                              print STDERR "Access-Challenge por intento errado con password de formato errado.\n";
                                                               $rp->set_code('Access-Challenge');
                                                         }
     						}else{
                                                         #password has incorrect format
-                                                        print "Password is not 4-digit or 6-alpha\n";
+                                                        print STDERR "Password is not 4-digit or 6-alpha\n";
                                                         $rp->set_code('Access-Reject'); 
                                                 }
     					}
@@ -187,12 +187,12 @@ while (1)
     					$rp->set_authenticator($p->authenticator);
     					# (No attributes are needed.. but you could set IP addr, etc. here)
     					# Authenticate with the secret and send to the server.
-    					print "Sendto\n";
+    					#print STDERR "Sendto\n";
     					$s->sendto(auth_resp($rp->pack, $secret), $whence);
     				} #cierra el if(packet Accept-Request
     				else {
                                         # It's not an Access-Request
-    					print "Unexpected packet type recieved.";
+    					print STDERR "Unexpected packet type recieved.";
     					$p->dump;
     				} #cierra else del if(packet Accept-Request
     			}#cierra if nFound
