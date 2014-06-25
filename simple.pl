@@ -1,4 +1,8 @@
     #!/usr/local/bin/perl -w
+    #para iniciar en modo normal "perl simple.pl > /tmp/otp.log 2> /dev/null"
+    #para iniciar en modo debug "perl simple.pl > /tmp/otp.debug 2> /tmp/otp.debug"
+    ## para ver el log usar "tail -f /tmp/otp.debug"
+   
 
     use RADIUS::Dictionary;
     use RADIUS::Packet;
@@ -96,7 +100,7 @@ while (1)
     												delete $usuarios{$p->attr('User-Name')};
     											}else{
     												$usuarios{$p->attr('User-Name')}[2]++;
-    												print "Access-Challenge por intento errado.\n";
+    												print STDERR "Access-Challenge por intento errado.\n";
     												$rp->set_code('Access-Challenge');
     											}
     										}
@@ -112,7 +116,7 @@ while (1)
     								}
     								else{
     									#Si el usuario no esta registrado
-    									#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono
+    									#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
     									my $filter = "uid=".$p->attr('User-Name');
     									$mesg = $ldap->search ( base    => "$base",
     											scope   => "sub",
@@ -120,24 +124,23 @@ while (1)
     											attrs   =>  $attrs
     											);
 
-    									print "MSG: ".$mesg->code."\n";
+    									print STDERR "MSG: ".$mesg->code."\n";
 
     									my $entry;
     									foreach $entry ($mesg->entries) { 
-    										print "DN=".$entry->dn()."\n";
+    										print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
     										if(!$entry->exists("TelephoneNumber"))
     										{
     											print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
     											$rp->set_code('Access-Reject');
     										}else
     										{
-    											print "Phone: ".$entry->get_value("telephoneNumber")."\n";
-    											my $phone = $entry->get_value("telephoneNumber");
-    											$phone = substr($phone, -4);
-    											print "ultimos 4 digitos son: ".$phone." al compara con password: ".$p->password($secret)."\n";
-    											if($p->password($secret) eq $phone)
+    											print STDERR "Telefono del usuarios: ".$entry->get_value("telephoneNumber")."\n";
+    											my $telephone = $entry->get_value("telephoneNumber");
+    											print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";
+    											if($p->password($secret) eq substr($telephone, -4))
     											{ 
-    												print "New User Start\n";
+    												print STDERR "New User Start\n";
     												#crear token
     												my $string = "";
     												for (0..5) { $string .= chr( int(rand(25) + 65) ); } print $string."\n";
@@ -147,12 +150,36 @@ while (1)
     												#crear tiempo de expiracion
     												my $time = time()+300;
     												$usuarios{$p->attr('User-Name')}[1] = $time;
-
-    												#print "New User with token ".$string." expires at ".$time."\n";
-    												$string = "";
-    												$time = 0;
-    												print "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
-    												$rp->set_code('Access-Challenge');
+												#####CODIGO PARA ENVIAR SMS#####
+												use LWP::UserAgent;
+												use HTTP::Request::Common qw{ POST };
+												my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
+												my $ua  = LWP::UserAgent->new();
+												my $request = POST $uri,
+													Content => [
+														RECIPIENT => $telephone,
+														TEXT => $string,
+														SOURCE_ADDR=> "314"
+													];
+												$request->header('Content-Type','application/x-www-form-urlencoded');
+												$request->protocol('HTTP/1.0');
+												#make the actual POST
+												print STDERR "POST as String:\n ".$request->as_string."\n\nSending...\n";
+												my $response = $ua->request($request) or die "error conecting to SMS system\n";
+												if ($response->code eq 200) {
+													$string = "";
+													$time = 0;
+													print STDERR "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
+													$rp->set_code('Access-Challenge');
+												}
+												else {
+													$string = "";
+													$time = 0;
+													print "HTTP POST error code: ", $response->code, "\n";
+													print "HTTP POST error message: ", $response->message, "\n";
+													$rp->set_code('Access-Reject');
+												}
+    												#print STDERR "New User with token ".$string." expires at ".$time."\n";
     											}else
     											{
     												print STDERR "Access-Reject:: Current User ".$p->attr('User-Name')." Password has wrong format\n";
