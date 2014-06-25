@@ -42,6 +42,12 @@
    #my $attrs = [ 'cn','mail','TelephoneNumber' ];
    #para el telefonica usar
    my $attrs = [ 'cn','mail','movil' ];
+   #para Telefonica usar
+   #my my $filter = "samAccountName=".$p->attr('User-Name'); = "samAccountName=".$p->attr('User-Name');
+   #para lab usar
+   #my $filter = "uid=".$p->attr('User-Name');
+
+
    
     # Parse the RADIUS dictionary file (must have dictionary in current dir)
     my $dict = new RADIUS::Dictionary "dictionary"
@@ -119,8 +125,8 @@ while (1)
     						}else #SI EL USUARIO NO EXISTE
     						{
     							#Si el usuario no esta registrado
-    							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
     							my $filter = "samAccountName=".$p->attr('User-Name');
+    							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
     							$mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
 											scope   => "sub",
     											filter  => $filter,
@@ -145,7 +151,27 @@ while (1)
     							}
     							if($telephone > 0)
     							{
-								#TODO BUSQUEDA TASA
+    								$mesgTASA = $ldapTASA->search ( base    => $baseTASA,
+											scope   => "sub",
+    											filter  => $filter,
+    											attrs   =>  $attrs
+    											);
+								print STDERR "MSG: ".$mesgTMOV->code."\n";
+    								
+								foreach $entry ($mesgTASA->entries) 
+								{ 
+									print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
+									if(!$entry->exists("movil"))
+									{
+										print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+										$rp->set_code('Access-Reject');
+									}else
+									{
+										print STDERR "Telefono del usuarios: ".$entry->get_value("movil")."\n";
+										$telephone = $entry->get_value("movil");
+										print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
+									}
+								}
     							}	
 							if($p->password($secret) eq substr($telephone, -4))
 							{ 
