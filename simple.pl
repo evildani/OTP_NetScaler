@@ -1,4 +1,4 @@
-    #!/usr/local/bin/perl -w
+#!/usr/local/bin/perl -w
     #para iniciar en modo normal "perl simple.pl > /tmp/otp.log 2> /dev/null"
     #para iniciar en modo debug "perl simple.pl > /tmp/otp.debug 2> /tmp/otp.debug"
     ## para ver el log usar "tail -f /tmp/otp.debug"
@@ -41,7 +41,7 @@
    #para el lab usar
    #my $attrs = [ 'cn','mail','TelephoneNumber' ];
    #para el telefonica usar
-   my $attrs = [ 'cn','mail','movil' ];
+   my $attrs = [ 'cn','mail','mobile' ];
    #para Telefonica usar
    #my my $filter = "samAccountName=".$p->attr('User-Name'); = "samAccountName=".$p->attr('User-Name');
    #para lab usar
@@ -73,6 +73,7 @@ while (1)
     				my $p = new RADIUS::Packet $dict, $rec;
     				if ($p->code eq 'Access-Request') 
     				{
+    					print STDERR "Received Access-Request\n";
     					my $rp = new RADIUS::Packet $dict;
     					if(length($p->password($secret))==4 || length($p->password($secret))==6)
     					{
@@ -82,6 +83,7 @@ while (1)
     						#print "Current User ".$username." ".$usuarios{$p->attr('User-Name')}[0]." ".$usuarios{$p->attr('User-Name')}[1]."\n";
     						if ($usuarios{$p->attr('User-Name')}) 
     						{
+    							print "Returning user: ".$p->attr('User-Name')."\n";
 							#usuario ya registrado, es respuesta al challenge
     							if($usuarios{$p->attr('User-Name')}[1]>time())
     							{
@@ -122,9 +124,9 @@ while (1)
     								$usuarios{$p->attr('User-Name')}[1] = "0";
     								delete $usuarios{$p->attr('User-Name')};
     							}
-    						}else #SI EL USUARIO NO EXISTE
-    						{
-    							#Si el usuario no esta registrado
+    						}else #SI EL USUARIO NO EXISTE, es usuario nuevo
+    						{	print "Regisstrando Usuario\n";
+    							#filtro para buscar en AD
     							my $filter = "samAccountName=".$p->attr('User-Name');
     							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
     							$mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
@@ -134,22 +136,22 @@ while (1)
     											);
 							print STDERR "MSG: ".$mesgTMOV->code."\n";
 							my $entry;
-    							my $telephone = 0;
+    							my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
     							foreach $entry ($mesgTMOV->entries) 
     							{ 
 								print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
-    								if(!$entry->exists("movil"))
+    								if(!$entry->exists("mobile"))
     								{
-    									print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
-    									$rp->set_code('Access-Reject');
+    									print STDERR "TMOVILES ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+    									#$rp->set_code('Access-Reject');
     								}else
     								{
-    									print STDERR "Telefono del usuarios: ".$entry->get_value("movil")."\n";
-    									$telephone = $entry->get_value("movil");
-    									print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
+    									print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
+    									$telephone = $entry->get_value("mobile");
+    									print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
     								}
     							}
-    							if($telephone > 0)
+    							if($telephone == 0)
     							{
     								$mesgTASA = $ldapTASA->search ( base    => $baseTASA,
 											scope   => "sub",
@@ -161,17 +163,22 @@ while (1)
 								foreach $entry ($mesgTASA->entries) 
 								{ 
 									print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
-									if(!$entry->exists("movil"))
+									if(!$entry->exists("mobile"))
 									{
-										print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
-										$rp->set_code('Access-Reject');
+										print STDERR "TASA ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+										#$rp->set_code('Access-Reject');
 									}else
 									{
-										print STDERR "Telefono del usuarios: ".$entry->get_value("movil")."\n";
-										$telephone = $entry->get_value("movil");
-										print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
+										print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
+										$telephone = $entry->get_value("mobile");
+										print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
 									}
 								}
+    							}
+    							if($telephone == 0)
+    							{
+    								print STDERR "El usuario no tiene telefono en ningun dominio";
+    								$rp->set_code('Access-Reject');
     							}	
 							if($p->password($secret) eq substr($telephone, -4))
 							{ 
@@ -253,7 +260,7 @@ while (1)
     				} #cierra el if(packet Accept-Request
     				else {
                                         # It's not an Access-Request
-    					print STDERR "Unexpected packet type recieved.";
+    					print "Unexpected packet type recieved.";
     					$p->dump;
     				} #cierra else del if(packet Accept-Request
     			}#cierra if nFound
