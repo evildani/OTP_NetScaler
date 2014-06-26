@@ -25,12 +25,34 @@
     $usuarios{$username}[1] = time()+300;
     $usuarios{$username}[2] = 0;
     my $secret = "mysecret";  # Shared secret on the term server
-    sub START_LDAP_TASA();
-    sub SATRT_LDAP_TMOV();
-
+    
+            #inicia la conexion con LDAP de cada dominio
+    my $ldapTMOV;
+    my $mesgTMOV;
+    #sub start_ldap_tmov($ldapTMOV,$mesgTMOV);
+    sub start_ldap_tmov{
+	#lo necesario para LDAP TMOVILES
+	    $ldapTMOV = Net::LDAP->new( 'ldaps://10.204.160.10' ) or die "$@";
+	    $mesgTMOV = $ldapTMOV->bind( '1',  #TODO
+			      password => '1'  #TODO
+			  );
+	}
+	
+	my $ldapTASA;
+	my $mesgTASA;
+	#sub start_ldap_tasa($ldapTASA,$mesgTASA);
+   sub start_ldap_tasa{
+	   #lo necesario para LDAP TASA
+	   my $ldapTASA = Net::LDAP->new( 'ldaps://10.249.20.161' ) or die "$@";
+	   my $mesgTASA = $ldapTASA->bind( '2',  #TODO
+				password => '2'   #TODO
+		);
+   }
+   
+  
    ##ALFINAL DEL ARCHIVO ESTAN DEFINIDAS ESTAS FUNCIONES, tan solo inician la conexion.
-   START_LDAP_TASA();
-   SATRT_LDAP_TMOV(); 
+   start_ldap_tasa($ldapTASA,$mesgTASA);
+   start_ldap_tmov($ldapTMOV,$mesgTMOV); 
    my $baseTMOV = "dc=tmoviles,dc=com,dc=ar";
    my $baseTASA = "dc=tasa,dc=telefonica,dc=com,dc=ar";
    #para el lab usar
@@ -44,8 +66,8 @@
 
 
    
-    # Parse the RADIUS dictionary file (must have dictionary in current dir)
-    my $dict = new RADIUS::Dictionary "dictionary"
+    # Parse the RADIUS dictionary file (absolut path to file)
+    my $dict = new RADIUS::Dictionary "/var/tmp/dictionary"
       or die "Couldn't read dictionary: $!";
 
     # Set up the network socket (must have radius in /etc/services)
@@ -133,7 +155,7 @@ while (1)
 							if($mesgTMOV->code eq 81)
 							{
 								#No lo soluciona para el usuario actual, pero si para el siguiente usuario.
-								START_LDAP_TMOV();
+								start_ldap_tmov($ldapTMOV,$mesgTMOV);
 							}
 							my $entry;
     							my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
@@ -162,7 +184,7 @@ while (1)
     								if($mesgTASA->code eq 81)
     								{	
     									#No lo soluciona para este usuario pero si para el proximo.
-    									START_LDAP_TASA();
+    									start_ldap_tasa($ldapTASA,$mesgTASA);
     								}
 								foreach $entry ($mesgTASA->entries) 
 								{ 
@@ -271,18 +293,3 @@ while (1)
     } #cierra while
     
     
-        #inicia la conexion con LDAP de cada dominio
-    sub START_LDAP_TMOV {
-	#lo necesario para LDAP TMOVILES
-	    my $ldapTMOV = Net::LDAP->new( 'ldaps://10.204.160.10' ) or die "$@";
-	    my $mesgTMOV = $ldapTMOV->bind( '1',  #TODO
-			      password => '1'  #TODO
-			  );
-	}
-   sub START_LDAP_TASA {
-	   #lo necesario para LDAP TASA
-	   my $ldapTASA = Net::LDAP->new( 'ldaps://10.249.20.161' ) or die "$@";
-	   my $mesgTASA = $ldapTASA->bind( '2',  #TODO
-				password => '2'   #TODO
-		);
-   }
