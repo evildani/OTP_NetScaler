@@ -1,0 +1,13 @@
+OTP_NetScaler
+=============
+
+This a RADIUS Server for NetScaler One Time Password
+This server was designed to be executed inside the NetSCaler FreeBSD kernel.
+
+To do so, use the libs.tar.gz file and untar un root.
+
+Copy dictionary file to /var/tmp
+
+go inside simple.pl file and modify you active directory settings and SMS gateway.
+
+execute using perl simple.pl /var/log/OTP.log 2> /var/log/OTP.log
