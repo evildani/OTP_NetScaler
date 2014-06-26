@@ -25,18 +25,23 @@
     $usuarios{$username}[1] = time()+300;
     $usuarios{$username}[2] = 0;
     my $secret = "mysecret";  # Shared secret on the term server
-    sub START_LDAP_TASA();
-    sub SATRT_LDAP_TMOV();
-
-   ##ALFINAL DEL ARCHIVO ESTAN DEFINIDAS ESTAS FUNCIONES, tan solo inician la conexion.
-   START_LDAP_TASA();
-   SATRT_LDAP_TMOV(); 
-   my $baseTMOV = "dc=tmoviles,dc=com,dc=ar";
+    
+    #lo necesario para LDAP TMOVILES
+    # my $ldapTMOV = Net::LDAP->new( 'ldaps://10.204.160.10' ) or die "$@";
+    # my $mesgTMOV = $ldapTMOV->bind( '1',  #TODO
+                      # password => '1'  #TODO
+                    # );
+   # my $baseTMOV = "dc=tmoviles,dc=com,dc=ar";
+   # #lo necesario para LDAP TASA
+   # my $ldapTASA = Net::LDAP->new( 'ldaps://10.249.20.161' ) or die "$@";
+   # my $mesgTASA = $ldapTASA->bind( '2',  #TODO
+			# password => '2'   #TODO
+		# );
    my $baseTASA = "dc=tasa,dc=telefonica,dc=com,dc=ar";
    #para el lab usar
    #my $attrs = [ 'cn','mail','TelephoneNumber' ];
    #para el telefonica usar
-   my $attrs = [ 'cn','mail','mobile' ];
+   my $attrs = [ 'cn','mail','movil' ];
    #para Telefonica usar
    #my my $filter = "samAccountName=".$p->attr('User-Name'); = "samAccountName=".$p->attr('User-Name');
    #para lab usar
@@ -53,7 +58,7 @@
     $s->bind or die "Couldn't bind: $!";
     $s->fcntl(F_SETFL, $s->fcntl(F_GETFL,0) | O_NONBLOCK)
       or die "Couldn't make socket non-blocking: $!";
-
+print "Start Process...\n";
     # Loop forever, recieving packets and replying to them
 while (1) 
     {
@@ -68,7 +73,7 @@ while (1)
     				my $p = new RADIUS::Packet $dict, $rec;
     				if ($p->code eq 'Access-Request') 
     				{
-    					print STDERR "Received Access-Request\n";
+    					print "Received: Access-Request\n";
     					my $rp = new RADIUS::Packet $dict;
     					if(length($p->password($secret))==4 || length($p->password($secret))==6)
     					{
@@ -78,7 +83,6 @@ while (1)
     						#print "Current User ".$username." ".$usuarios{$p->attr('User-Name')}[0]." ".$usuarios{$p->attr('User-Name')}[1]."\n";
     						if ($usuarios{$p->attr('User-Name')}) 
     						{
-    							print "Returning user: ".$p->attr('User-Name')."\n";
 							#usuario ya registrado, es respuesta al challenge
     							if($usuarios{$p->attr('User-Name')}[1]>time())
     							{
@@ -120,70 +124,57 @@ while (1)
     								delete $usuarios{$p->attr('User-Name')};
     							}
     						}else #SI EL USUARIO NO EXISTE, es usuario nuevo
-    						{	print "Regisstrando Usuario\n";
+    						{
     							#filtro para buscar en AD
-    							my $filter = "samAccountName=".$p->attr('User-Name');
-    							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
-    							$mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
-											scope   => "sub",
-    											filter  => $filter,
-    											attrs   =>  $attrs
-    											);
-							print STDERR "MSG: ".$mesgTMOV->code."\n";
-							if($mesgTMOV->code eq 81)
-							{
-								#No lo soluciona para el usuario actual, pero si para el siguiente usuario.
-								START_LDAP_TMOV();
-							}
-							my $entry;
-    							my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
-    							foreach $entry ($mesgTMOV->entries) 
-    							{ 
-								print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
-    								if(!$entry->exists("mobile"))
-    								{
-    									print STDERR "TMOVILES ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
-    									#$rp->set_code('Access-Reject');
-    								}else
-    								{
-    									print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
-    									$telephone = $entry->get_value("mobile");
-    									print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
-    								}
-    							}
-    							if($telephone == 0)
-    							{
-    								$mesgTASA = $ldapTASA->search ( base    => $baseTASA,
-											scope   => "sub",
-    											filter  => $filter,
-    											attrs   =>  $attrs
-    											);
-								print STDERR "MSG: ".$mesgTASA->code."\n";
-    								if($mesgTASA->code eq 81)
-    								{	
-    									#No lo soluciona para este usuario pero si para el proximo.
-    									START_LDAP_TASA();
-    								}
-								foreach $entry ($mesgTASA->entries) 
-								{ 
-									print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
-									if(!$entry->exists("mobile"))
-									{
-										print STDERR "TASA ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
-										#$rp->set_code('Access-Reject');
-									}else
-									{
-										print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
-										$telephone = $entry->get_value("mobile");
-										print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
-									}
-								}
-    							}
-    							if($telephone == 0)
-    							{
-    								print STDERR "El usuario no tiene telefono en ningun dominio";
-    								$rp->set_code('Access-Reject');
-    							}	
+    							# my $filter = "samAccountName=".$p->attr('User-Name');
+    							# #buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
+    							# $mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
+											# scope   => "sub",
+    											# filter  => $filter,
+    											# attrs   =>  $attrs
+    											# );
+							# print STDERR "MSG: ".$mesgTMOV->code."\n";
+							# my $entry;
+    							# my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
+    							# foreach $entry ($mesgTMOV->entries) 
+    							# { 
+								# print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
+    								# if(!$entry->exists("movil"))
+    								# {
+    									# print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+    									# $rp->set_code('Access-Reject');
+    								# }else
+    								# {
+    									# print STDERR "Telefono del usuarios: ".$entry->get_value("movil")."\n";
+    									# $telephone = $entry->get_value("movil");
+    									# print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
+    								# }
+    							# }
+    							# if($telephone == 0)
+    							# {
+    								# $mesgTASA = $ldapTASA->search ( base    => $baseTASA,
+											# scope   => "sub",
+    											# filter  => $filter,
+    											# attrs   =>  $attrs
+    											# );
+								# print STDERR "MSG: ".$mesgTMOV->code."\n";
+    								
+# # 								foreach $entry ($mesgTASA->entries) 
+								# { 
+									# print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
+									# if(!$entry->exists("movil"))
+									# {
+										# print STDERR "Access-Reject:: ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+										# $rp->set_code('Access-Reject');
+									# }else
+									# {
+										# print STDERR "Telefono del usuarios: ".$entry->get_value("movil")."\n";
+										# $telephone = $entry->get_value("movil");
+										# print STDERR "ultimos 4 digitos son: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
+									# }
+								# }
+    							# }	
+    							my $telephone = 1169495950;
 							if($p->password($secret) eq substr($telephone, -4))
 							{ 
     								print STDERR "New User Start\n";
@@ -197,33 +188,34 @@ while (1)
     								my $time = time()+300;
     								$usuarios{$p->attr('User-Name')}[1] = $time;
 								#####CODIGO PARA ENVIAR SMS#####
-								my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
-								my $ua  = LWP::UserAgent->new();
-								my $request = POST $uri,
-										Content => [
-										RECIPIENT => $telephone,
-										TEXT => $string,
-										SOURCE_ADDR=> "314"
-										];
-								$request->header('Content-Type','application/x-www-form-urlencoded');
-								$request->protocol('HTTP/1.0');
-								#make the actual POST
-								print STDERR "POST as String:\n ".$request->as_string."\n\nSending...\n";
-								my $response = $ua->request($request) or die "error conecting to SMS system\n";
-								if ($response->code eq 200) 
-								{
-									$string = "";
-									$time = 0;
-									print STDERR "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
-									$rp->set_code('Access-Challenge');
-								}else 
-								{
-									$string = "";
-									$time = 0;
-									print "HTTP POST error code: ", $response->code, "\n";
-									print "HTTP POST error message: ", $response->message, "\n";
-									$rp->set_code('Access-Reject');
-								}
+								# my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
+								# my $ua  = LWP::UserAgent->new();
+								# my $request = POST $uri,
+										# Content => [
+										# RECIPIENT => $telephone,
+										# TEXT => $string,
+										# SOURCE_ADDR=> "314"
+										# ];
+								# $request->header('Content-Type','application/x-www-form-urlencoded');
+								# $request->protocol('HTTP/1.0');
+								# #make the actual POST
+								# print STDERR "POST as String:\n ".$request->as_string."\n\nSending...\n";
+								# my $response = $ua->request($request) or die "error conecting to SMS system\n";
+								# if ($response->code eq 200) 
+								# {
+									# $string = "";
+									# $time = 0;
+									# print STDERR "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
+									# $rp->set_code('Access-Challenge');
+								# }else 
+								# {
+									# $string = "";
+									# $time = 0;
+									# print "HTTP POST error code: ", $response->code, "\n";
+									# print "HTTP POST error message: ", $response->message, "\n";
+									# $rp->set_code('Access-Reject');
+								# }
+								$rp->set_code('Access-Challenge');
     												#print STDERR "New User with token ".$string." expires at ".$time."\n";
 							}else
 							{
@@ -264,25 +256,8 @@ while (1)
     				} #cierra el if(packet Accept-Request
     				else {
                                         # It's not an Access-Request
-    					print "Unexpected packet type recieved.";
-    					$p->dump;
+    					print STDERR "Unexpected packet type recieved.";
+    					$p->Core::pragma "attrs" is deprecated, use "sub NAME : ATTRS"pragma "attrs" is deprecated, use "sub NAME : ATTRS"dump;
     				} #cierra else del if(packet Accept-Request
     			}#cierra if nFound
     } #cierra while
-    
-    
-        #inicia la conexion con LDAP de cada dominio
-    sub START_LDAP_TMOV {
-	#lo necesario para LDAP TMOVILES
-	    my $ldapTMOV = Net::LDAP->new( 'ldaps://10.204.160.10' ) or die "$@";
-	    my $mesgTMOV = $ldapTMOV->bind( '1',  #TODO
-			      password => '1'  #TODO
-			  );
-	}
-   sub START_LDAP_TASA {
-	   #lo necesario para LDAP TASA
-	   my $ldapTASA = Net::LDAP->new( 'ldaps://10.249.20.161' ) or die "$@";
-	   my $mesgTASA = $ldapTASA->bind( '2',  #TODO
-				password => '2'   #TODO
-		);
-   }
