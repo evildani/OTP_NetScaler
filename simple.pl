@@ -2,6 +2,10 @@
     #para iniciar en modo normal "perl simple.pl > /tmp/otp.log 2> /dev/null"
     #para iniciar en modo debug "perl simple.pl > /tmp/otp.debug 2> /tmp/otp.debug"
     ## para ver el log usar "tail -f /tmp/otp.debug"
+    ##
+    ##
+    ## ultima versión disponible en https://github.com/evildani/OTP_NetScaler
+    ##
    
 
     use RADIUS::Dictionary;
@@ -14,9 +18,20 @@
     use Fcntl;
     use strict;
 
-    # This is a VERY simple RADIUS authentication server which responds
-    # to Access-Request packets with Access-Accept.  This allows anyone
-    # to log in.
+    #archivo de configuración
+    open (CONFIG, '/var/tmp/simple.config');
+    my %Config;
+    while (<CONFIG>) {
+    chomp;
+    s/#.*//;
+    s/^\s+//;
+    s/\s+$//;
+    next unless length;
+    my ($var, $value) = split(/\s*=\s*/, $_, 2);
+    $Config{$var} = $value;
+    } 
+
+    
     my %usuarios;
     #$my @user = ("ABCDEF" ,time()+300 );
     my $username = "nata";
@@ -27,25 +42,23 @@
     my $secret = "mysecret";  # Shared secret on the term server
     
             #inicia la conexion con LDAP de cada dominio
-    my $ldapTMOV;
+    my $ldapTMOV = Net::LDAP->new( $Config{tmov_ldap_uri} ) or die "$@";
     my $mesgTMOV;
     #sub start_ldap_tmov($ldapTMOV,$mesgTMOV);
     sub start_ldap_tmov{
 	#lo necesario para LDAP TMOVILES
-	    $ldapTMOV = Net::LDAP->new( 'ldaps://10.204.160.10' ) or die "$@";
-	    $mesgTMOV = $ldapTMOV->bind( '1',  #TODO
-			      password => '1'  #TODO
+	    $mesgTMOV = $ldapTMOV->bind(  $Config{tmov_ldap_username},
+			      password => $Config{tmov_ldap_password} 
 			  );
 	}
 	
-	my $ldapTASA;
+	my $ldapTASA = Net::LDAP->new($Config{tmov_ldap_uri}) or die "$@";
 	my $mesgTASA;
 	#sub start_ldap_tasa($ldapTASA,$mesgTASA);
    sub start_ldap_tasa{
 	   #lo necesario para LDAP TASA
-	   my $ldapTASA = Net::LDAP->new( 'ldaps://10.249.20.161' ) or die "$@";
-	   my $mesgTASA = $ldapTASA->bind( '2',  #TODO
-				password => '2'   #TODO
+	   $mesgTASA = $ldapTASA->bind( $Config{tasa_ldap_username},
+				password => $Config{tasa_ldap_password}   
 		);
    }
    
@@ -53,8 +66,7 @@
    ##ALFINAL DEL ARCHIVO ESTAN DEFINIDAS ESTAS FUNCIONES, tan solo inician la conexion.
    start_ldap_tasa($ldapTASA,$mesgTASA);
    start_ldap_tmov($ldapTMOV,$mesgTMOV); 
-   my $baseTMOV = "dc=tmoviles,dc=com,dc=ar";
-   my $baseTASA = "dc=tasa,dc=telefonica,dc=com,dc=ar";
+  
    #para el lab usar
    #my $attrs = [ 'cn','mail','TelephoneNumber' ];
    #para el telefonica usar
@@ -88,24 +100,27 @@ while (1)
     				$rec = $s->recv(undef, undef, $whence);
     				# Unpack it
     				my $p = new RADIUS::Packet $dict, $rec;
-    				if ($p->code eq 'Access-Request') 
+##__1__##__START    				
+    				if ($p->code eq 'Access-Request')   ##__1__##__START
     				{
     					print STDERR "Received Access-Request\n";
     					my $rp = new RADIUS::Packet $dict;
-    					if(length($p->password($secret))==4 || length($p->password($secret))==6)
+##__2__##__START    					
+    					if(length($p->password($secret))==4 || length($p->password($secret))==6) ##__2__##__START
     					{
     						# Print some details about the incoming request (try ->dump here)
     						print $p->attr('User-Name'), " logging in with password ",
 						$p->password($secret), "\n";
     						#print "Current User ".$username." ".$usuarios{$p->attr('User-Name')}[0]." ".$usuarios{$p->attr('User-Name')}[1]."\n";
-    						if ($usuarios{$p->attr('User-Name')}) 
+##__3__##__START    						
+    						if ($usuarios{$p->attr('User-Name')})  ##__3__##__START
     						{
     							print "Returning user: ".$p->attr('User-Name')."\n";
-							#usuario ya registrado, es respuesta al challenge
-    							if($usuarios{$p->attr('User-Name')}[1]>time())
+##__4__##__START					#usuario ya registrado, es respuesta al challenge
+    							if($usuarios{$p->attr('User-Name')}[1]>time()) ##__4__##__START
     							{
     								#verificación para ver si el token no esta expirado
-    								if($p->password($secret) eq $usuarios{$p->attr('User-Name')}[0])
+    								if($p->password($secret) eq $usuarios{$p->attr('User-Name')}[0]) ##__5__##__START
     									{
     										#si el password corresponde al token
     										print "Access-Accept:: USER PASSWD OK".$p->attr('User-Name')."\n";
@@ -117,8 +132,8 @@ while (1)
     									{
     										#token y password no corresponden
     										print STDERR "PASSWD MAL ".$p->attr('User-Name')." Numero de intentos fallidos: ".$usuarios{$p->attr('User-Name')}[2]." > 3 \n";
-    										#aumenta el contador de errores.
-    										if($usuarios{$p->attr('User-Name')}[2]>3)
+##__10__##__START    								#aumenta el contador de errores.
+    										if($usuarios{$p->attr('User-Name')}[2]>3) ##__10__##__START
     										{
     											print STDERR "Access-Reject:: demasiados intentos fallidos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
     											$rp->set_code('Access-Reject');
@@ -132,7 +147,7 @@ while (1)
     											$rp->set_code('Access-Challenge');
     										}
     									}
-							}else
+							}else   
     							{
     								#token expirado
     								print STDERR "Access-Reject:: REJECT TOKEN EXPIRADO ".$p->attr('User-Name')."; Tiempo ahora:".time()."; Esperaba: ".$usuarios{$p->attr('User-Name')}[1]."\n";
@@ -141,22 +156,22 @@ while (1)
     								$usuarios{$p->attr('User-Name')}[1] = "0";
     								delete $usuarios{$p->attr('User-Name')};
     							}
-    						}else #SI EL USUARIO NO EXISTE, es usuario nuevo
-    						{	print "Regisstrando Usuario\n";
+    						}else #SI EL USUARIO NO EXISTE, es usuario nuevo ##__9__##__START
+    						{	
+##__9__##__START    							
+    							print "Regisstrando Usuario\n";
     							#filtro para buscar en AD
+    							my $baseTMOV = "dc=tmoviles,dc=com,dc=ar";
+							my $baseTASA = "dc=tasa,dc=telefonica,dc=com,dc=ar";
     							my $filter = "samAccountName=".$p->attr('User-Name');
     							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
+    							start_ldap_tmov($ldapTMOV,$mesgTMOV);
     							$mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
 											scope   => "sub",
     											filter  => $filter,
     											attrs   =>  $attrs
     											);
 							print STDERR "MSG: ".$mesgTMOV->code."\n";
-							if($mesgTMOV->code eq 81)
-							{
-								#No lo soluciona para el usuario actual, pero si para el siguiente usuario.
-								start_ldap_tmov($ldapTMOV,$mesgTMOV);
-							}
 							my $entry;
     							my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
     							foreach $entry ($mesgTMOV->entries) 
@@ -173,19 +188,17 @@ while (1)
     									print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
     								}
     							}
+    							$ldapTMOV->unbind;
+    							## si no es usuario TMOVILES no se encontro un numero telefonico para el por lo cual aun es 0.
     							if($telephone == 0)
     							{
+    								start_ldap_tasa($ldapTASA,$mesgTASA);
     								$mesgTASA = $ldapTASA->search ( base    => $baseTASA,
 											scope   => "sub",
     											filter  => $filter,
     											attrs   =>  $attrs
     											);
 								print STDERR "MSG: ".$mesgTASA->code."\n";
-    								if($mesgTASA->code eq 81)
-    								{	
-    									#No lo soluciona para este usuario pero si para el proximo.
-    									start_ldap_tasa($ldapTASA,$mesgTASA);
-    								}
 								foreach $entry ($mesgTASA->entries) 
 								{ 
 									print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
@@ -200,17 +213,21 @@ while (1)
 										print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
 									}
 								}
+								$ldapTASA->unbind;
     							}
     							if($telephone == 0)
     							{
-    								print STDERR "El usuario no tiene telefono en ningun dominio";
+    								print STDERR "El usuario no tiene telefono en ningun dominio\n";
     								$rp->set_code('Access-Reject');
     							}	
-							if($p->password($secret) eq substr($telephone, -4))
+##__6__##__START					
+							if($p->password($secret) eq substr($telephone, -4)) ##__6__##__START
 							{ 
     								print STDERR "New User Start\n";
     								#crear token
     								my $string = "";
+##__7__##__START						##Esta linea genera el TOKEN de 6 caracteres
+								#       | cambie este numero para variar la longitud			##__7__##__START
     								for (0..5) { $string .= chr( int(rand(25) + 65) ); } print $string."\n";
     								#print "CHECK Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
     								$usuarios{$p->attr('User-Name')}[2] = 0;
@@ -218,7 +235,7 @@ while (1)
     								#crear tiempo de expiracion
     								my $time = time()+300;
     								$usuarios{$p->attr('User-Name')}[1] = $time;
-								#####CODIGO PARA ENVIAR SMS#####
+##__8__##__START						#####CODIGO PARA ENVIAR SMS#####        				##__8__##__START
 								my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
 								my $ua  = LWP::UserAgent->new();
 								my $request = POST $uri,
@@ -249,7 +266,7 @@ while (1)
     												#print STDERR "New User with token ".$string." expires at ".$time."\n";
 							}else
 							{
-    								print STDERR "Access-Reject:: Current User ".$p->attr('User-Name')." Password has wrong format\n";
+    								print "Access-Reject:: Current User ".$p->attr('User-Name')." Password y Telefono no corresponden\n";
     								$rp->set_code('Access-Reject');
 							}
     						} #cierra ELSE si no existe el telefono				
@@ -279,7 +296,6 @@ while (1)
     					}
     					$rp->set_identifier($p->identifier);
     					$rp->set_authenticator($p->authenticator);
-    					# (No attributes are needed.. but you could set IP addr, etc. here)
     					# Authenticate with the secret and send to the server.
     					#print STDERR "Sendto\n";
     					$s->sendto(auth_resp($rp->pack, $secret), $whence);
