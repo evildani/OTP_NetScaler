@@ -49,6 +49,9 @@
     my $ldapTASA;
 	my $mesgTASA;
    
+   #durante la sesion de un usuario aqui se guarda el numero telefonico, siempre se inicia en 0
+   my $telephone = 0;
+   
     #sub start_ldap_tmov($ldapTMOV,$mesgTMOV);
     sub start_ldap_tmov{
     	$ldapTMOV = Net::LDAP->new( $Config{tmov_ldap_uri} ) or die "$@";
@@ -151,7 +154,7 @@ while (1)
     											$rp->set_code('Access-Challenge');
     										}
     									}
-								}else   
+							}else   
     							{
     								#token expirado
     								print STDERR "Access-Reject:: REJECT TOKEN EXPIRADO ".$p->attr('User-Name')."; Tiempo ahora:".time()."; Esperaba: ".$usuarios{$p->attr('User-Name')}[1]."\n";
@@ -160,8 +163,7 @@ while (1)
     								$usuarios{$p->attr('User-Name')}[1] = "0";
     								delete $usuarios{$p->attr('User-Name')};
     							}
-    						}
-    						else
+    						}else
     						{ #SI EL USUARIO NO EXISTE, es usuario nuevo ##__9__##__START
     							
 ##__9__##__START    							
@@ -169,7 +171,7 @@ while (1)
     							#filtro para buscar en AD
     							my $filter = "samAccountName=".$p->attr('User-Name');
     							my $entry;
-    							my $telephone = 0; #inicia en 0, la busqueda debe cambiarlo
+    							$telephone = 0; #inicia en 0, la busqueda debe cambiarlo
     							#buscar en LDAP telefono para verificar el los ultimos 4 digitos del telefono y poder enviar SMS
     							start_ldap_tmov($ldapTMOV,$mesgTMOV);
     							$mesgTMOV = $ldapTMOV->search ( base    => $baseTMOV,
@@ -179,10 +181,9 @@ while (1)
     											);
     							if($mesgTMOV->code==81)
     							{
-									print "Error en conexion a LDAO TMOV ".$mesgTMOV->code."\n";
-								}
-								else
-								{
+								print "Error en conexion a LDAO TMOV ".$mesgTMOV->code."\n";
+							}else
+							{
     								foreach $entry ($mesgTMOV->entries) 
     								{ 
 									print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
@@ -210,25 +211,24 @@ while (1)
     											);
     								if($mesgTASA->code==81)
     								{
-										print "Error en conexion LDAO TASA: ".$mesgTASA->code."\n";
-									}
-									else #else de OK en LDAP
-									{
-										foreach $entry ($mesgTASA->entries) 
-										{ 
-											print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
-											if(!$entry->exists("mobile"))
-											{
-												print STDERR "TASA ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
-												#$rp->set_code('Access-Reject');
-											}else
-											{
-												print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
-												$telephone = $entry->get_value("mobile");
-												print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
-											}
+									print "Error en conexion LDAO TASA: ".$mesgTASA->code."\n";
+								}else #else de OK en LDAP
+								{
+									foreach $entry ($mesgTASA->entries) 
+									{ 
+										print STDERR "LDAP Busqueda DN=".$entry->dn()."\n";
+										if(!$entry->exists("mobile"))
+										{
+											print STDERR "TASA ".$p->attr('User-Name')." No hay Telefono registrado en LDAP\n";
+											#$rp->set_code('Access-Reject');
+										}else
+										{
+											print STDERR "Telefono del usuarios: ".$entry->get_value("mobile")."\n";
+											$telephone = $entry->get_value("mobile");
+											print STDERR "telefono es: ".$telephone." al compara con password: ".$p->password($secret)."\n";	
 										}
 									}
+								}
 									$ldapTASA->unbind;
     							}
     							if($telephone == 0)
@@ -238,8 +238,8 @@ while (1)
     							}	
     						}
 ##__6__##__START					
-								if($p->password($secret) eq substr($telephone, -4)) ##__6__##__START
-								{ 
+						if($p->password($secret) eq substr($telephone, -4)) ##__6__##__START
+						{ 
     								print STDERR "New User Start\n";
     								#crear token
     								my $string = "";
@@ -281,12 +281,12 @@ while (1)
 										$rp->set_code('Access-Reject');
 									}
     												#print STDERR "New User with token ".$string." expires at ".$time."\n";
-								}else
-								{
-    								print "Access-Reject:: Current User ".$p->attr('User-Name')." Password y Telefono no corresponden\n";
-    								$rp->set_code('Access-Reject');
-								}
-    						} #cierra ELSE si no existe el telefono				
+						}else
+						{
+    							print "Access-Reject:: Current User ".$p->attr('User-Name')." Password y Telefono no corresponden\n";
+    							$rp->set_code('Access-Reject');
+						}
+    						 #cierra ELSE si no existe el telefono				
     					}else #cierra if del formato para password
     					{
     						if ($usuarios{$p->attr('User-Name')})
@@ -317,7 +317,8 @@ while (1)
     					#print STDERR "Sendto\n";
     					$s->sendto(auth_resp($rp->pack, $secret), $whence);
     				} #cierra el if(packet Accept-Request
-    				else {
+    				else 
+    				{
                                         # It's not an Access-Request
     					print "Unexpected packet type recieved.";
     					$p->dump;
