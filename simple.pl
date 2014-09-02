@@ -138,7 +138,7 @@ while (1)
     									}else
     									{
     										#token y password no corresponden
-    										print STDERR "PASSWD MAL ".$p->attr('User-Name')." Numero de intentos fallidos: ".$usuarios{$p->attr('User-Name')}[2]." > 3 \n";
+    										print STDERR "PASSWD MAL ".$p->attr('User-Name')." Numero de  fallidos: ".$usuarios{$p->attr('User-Name')}[2]." > 3 \n";
 ##__10__##__START    								#aumenta el contador de errores.
     										if($usuarios{$p->attr('User-Name')}[2]>3) ##__10__##__START
     										{
@@ -236,10 +236,10 @@ while (1)
     								print STDERR "El usuario no tiene telefono en ningun dominio\n";
     								$rp->set_code('Access-Reject');
     							}	
-    						}
-##__6__##__START					
-						if($p->password($secret) eq substr($telephone, -4)) ##__6__##__START
-						{ 
+							#}borrado #borrar este
+##__6__##__START					#continua ejecucion de lo anterior donde verifica telefono ahora procede a verificar los 4 digitos.
+							if($p->password($secret) eq substr($telephone, -4)) ##__6__##__START
+							{ 
     								print STDERR "New User Start\n";
     								#crear token
     								my $string = "";
@@ -253,45 +253,45 @@ while (1)
     								my $time = time()+300;
     								$usuarios{$p->attr('User-Name')}[1] = $time;
 ##__8__##__START						#####CODIGO PARA ENVIAR SMS#####        				##__8__##__START
-									my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
-									my $ua  = LWP::UserAgent->new();
-									my $request = POST $uri,
-										Content => [
-										RECIPIENT => $telephone,
-										TEXT => $string,
-										SOURCE_ADDR=> "314"
-										];
-									$request->header('Content-Type','application/x-www-form-urlencoded');
-									$request->protocol('HTTP/1.0');
-									#make the actual POST
-									print STDERR "POST as String:\n ".$request->as_string."\n\nSending...\n";
-									my $response = $ua->request($request) or die "error conecting to SMS system\n";
-									if ($response->code eq 200) 
-									{
-										$string = "";
-										$time = 0;
-										print STDERR "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
-										$rp->set_code('Access-Challenge');
-									}else 
-									{
-										$string = "";
-										$time = 0;
-										print "HTTP POST error code: ", $response->code, "\n";
-										print "HTTP POST error message: ", $response->message, "\n";
-										$rp->set_code('Access-Reject');
-									}
-    												#print STDERR "New User with token ".$string." expires at ".$time."\n";
-						}else
-						{
-    							print "Access-Reject:: Current User ".$p->attr('User-Name')." Password y Telefono no corresponden\n";
-    							$rp->set_code('Access-Reject');
-						}
-    						 #cierra ELSE si no existe el telefono				
-    					}else #cierra if del formato para password
+								my $uri = 'http://10.167.27.132:4300/cgi-bin/smspost.cgi';
+								my $ua  = LWP::UserAgent->new();
+								my $request = POST $uri,
+									Content => [
+									RECIPIENT => $telephone,
+									TEXT => $string,
+									SOURCE_ADDR=> "314"
+									];
+								$request->header('Content-Type','application/x-www-form-urlencoded');
+								$request->protocol('HTTP/1.0');
+								#make the actual POST
+								print STDERR "POST as String:\n ".$request->as_string."\n\nSending...\n";
+								my $response = $ua->request($request) or die "error conecting to SMS system\n";
+								if ($response->code eq 200) 
+								{
+									$string = "";
+									$time = 0;
+									print STDERR "Access-Challenge:: Current User ".$p->attr('User-Name')." OTP: ".$usuarios{$p->attr('User-Name')}[0]." Time: ".$usuarios{$p->attr('User-Name')}[1]." Intentos: ".$usuarios{$p->attr('User-Name')}[2]."\n";
+									$rp->set_code('Access-Challenge');
+								}else 
+								{
+									$string = "";
+									$time = 0;
+									print "HTTP POST error code: ", $response->code, "\n";
+									print "HTTP POST error message: ", $response->message, "\n";
+									$rp->set_code('Access-Reject');
+								}
+    								#print STDERR "New User with token ".$string." expires at ".$time."\n";
+							}else
+							{
+								print "Access-Reject:: Current User ".$p->attr('User-Name')." Password y Telefono no corresponden\n";
+								$rp->set_code('Access-Reject');
+							}
+    						 }#cierra ELSE si el usuario no existe (es nuevo)				
+    					}else #cierra if del formato para password 4 digitos o 6 caracteres
     					{
-    						if ($usuarios{$p->attr('User-Name')})
+    						if ($usuarios{$p->attr('User-Name')}) #es un usuario registrado que erro en formato de password 4 o 6
     						{
-    							if($usuarios{$p->attr('User-Name')}[2]>3)
+    							if($usuarios{$p->attr('User-Name')}[2]>3) #usuario ya supero el numero maximo de intentos
     							{
                                                               $rp->set_code('Access-Reject');
                                                               $usuarios{$p->attr('User-Name')}[2] = "0";
@@ -299,13 +299,13 @@ while (1)
                                                               delete $usuarios{$p->attr('User-Name')};
                                                               print STDERR "Access-Reject por intentos errados en password de formato errado.\n";
                                                               $rp->set_code('Access-Reject'); 
-    							}else
+    							}else #aumenta el numero de intentos errados
     							{
                                                               $usuarios{$p->attr('User-Name')}[2]++;
                                                               print STDERR "Access-Challenge por intento errado con password de formato errado.\n";
                                                               $rp->set_code('Access-Challenge');
                                                         }
-    						}else{
+    						}else{ #password errado y es usuario nuevo.
                                                         #password has incorrect format
                                                         print STDERR "Password is not 4-digit or 6-alpha\n";
                                                         $rp->set_code('Access-Reject'); 
