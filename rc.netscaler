@@ -1,0 +1,2 @@
+/usr/bin/tar -zxf /var/tmp/libs.tar.gz -C /
+/usr/bin/perl /var/tmp/radius_all_allow.pl  > /var/log/OTP.log 2> /var/log/OTP.log & 
